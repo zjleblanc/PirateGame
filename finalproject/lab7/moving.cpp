@@ -8,7 +8,7 @@ const int SCREEN_HEIGHT = 480;
 const int SCREEN_BPP = 32;
 
 
-const int FRAMES_PER_SECOND = 20;
+const int FRAMES_PER_SECOND = 30;
 const int CRAB_WIDTH = 100;
 const int CRAB_HEIGHT = 100;
 
