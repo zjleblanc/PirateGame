@@ -1,4 +1,4 @@
-// Motion tester
+// Motion tester - Zach LeBlanc
 
 #include "SDL/SDL.h"
 #include "SDL/SDL_image.h"
