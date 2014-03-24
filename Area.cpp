@@ -47,13 +47,14 @@ Area::Area(int areaW, int areaH) {
 		for(int x = 0; x < width; x++) {
 			switch(rand() % 8) {
 			case 0:
-				temp.push_back('I');
+				temp.push_back('G');
 				break;
 			case 1:
 				temp.push_back('B');
 				break;
 			case 2:
-				//temp.push_back('A');
+				temp.push_back('A');
+				break;
 			default:
 				temp.push_back('I');
 			}
