@@ -15,9 +15,10 @@ Player::Player()
 	move_down1(playerSprites.getSurface(), 2, 0, false, false),
 	move_down2(playerSprites.getSurface(), 3, 0, false, false)
 {
-	x = 0, xAnimate = 0; 
-	y = 0, yAnimate = 0;
+	x = 0; 
+	y = 0;
 	direction = 1; 
+	currentlySliding = false;
 	keyboard = new Keyboard();
 }
 
@@ -28,10 +29,10 @@ Player::~Player() {
 void Player::render(int xp, int yp, SDL_Surface* screen) {
 	
 	if(direction == 0) {
-		if((yAnimate % 32 > 4) && (yAnimate % 32 < 12)) {
+		if(((y % 32 > 4) && (y % 32 < 12)) || currentlySliding) {
 			move_up1.render(xp, yp, screen);
 		} 
-		else if((yAnimate % 32 > 20) && (yAnimate % 32 < 28)) {
+		else if((y % 32 > 20) && (y % 32 < 28)) {
 			move_up2.render(xp, yp, screen);
 		} 
 		else {
@@ -40,10 +41,10 @@ void Player::render(int xp, int yp, SDL_Surface* screen) {
 	} 
 	
 	else if(direction == 1) {
-		if((yAnimate % 32 > 4) && (yAnimate % 32 < 12)) {
+		if(((y % 32 > 4) && (y % 32 < 12)) || currentlySliding) {
 			move_down1.render(xp, yp, screen);
 		} 
-		else if((yAnimate % 32 > 20) && (yAnimate % 32 < 28)) {
+		else if((y % 32 > 20) && (y % 32 < 28)) {
 			move_down2.render(xp, yp, screen);
 		} 
 		else {
@@ -52,7 +53,7 @@ void Player::render(int xp, int yp, SDL_Surface* screen) {
 	}
 
 	else if(direction == 2) {
-		if((xAnimate % 16 > 4) && (xAnimate % 16 < 12)) {
+		if(((x % 16 > 4) && (x % 16 < 12)) || currentlySliding) {
 			move_left.render(xp, yp, screen);
 		} 
 		else {
@@ -61,7 +62,7 @@ void Player::render(int xp, int yp, SDL_Surface* screen) {
 	}
 
 	else if(direction == 3) {
-		if((xAnimate % 16 > 4) && (xAnimate % 16 < 12)) {
+		if(((x % 16 > 4) && (x % 16 < 12)) || currentlySliding) {
 			move_right.render(xp, yp, screen);
 		} 
 		else {
@@ -84,22 +85,18 @@ void Player::update(Display* display) {
 bool Player::continueMotion() {
 	if((y % Sprite::getSize() != 0) && (direction == 0)) {
 		y--;
-		yAnimate--;
 		return true;
 	} 
 	else if ((y % Sprite::getSize() != 0) && (direction == 1)) {
 		y++;
-		yAnimate++;
 		return true;
 	} 
 	else if ((x % Sprite::getSize() != 0) && (direction == 2)) {
 		x--;
-		xAnimate--;
 		return true;
 	} 
 	else if ((x % Sprite::getSize() != 0) && (direction == 3)) {
 		x++;
-		xAnimate++;
 		return true;
 	}
 
@@ -111,7 +108,6 @@ void Player::processInput(Display* display) {
 		direction = 0;
 		if(!isCollision(display)) {
 			y--;
-			yAnimate--;
 		}
 	}
 
@@ -119,7 +115,6 @@ void Player::processInput(Display* display) {
 		direction = 1;
 		if(!isCollision(display)) {
 			y++;
-			yAnimate++;
 		}
 	}
 	
@@ -127,7 +122,6 @@ void Player::processInput(Display* display) {
 		direction = 2;
 		if(!isCollision(display)) {
 			x--;
-			xAnimate--;
 		}
 	}
 	
@@ -135,7 +129,6 @@ void Player::processInput(Display* display) {
 		direction = 3;
 		if(!isCollision(display)) {
 			x++;
-			xAnimate++;
 		}
 	}
 }
@@ -148,8 +141,8 @@ void Player::setLocation(int newX, int newY) {
 bool Player::isCollision(Display* display) {
 
 	Sprite* nextTile;
-	int xColl = x + display->getWidth() / 2;
-	int yColl = y + display->getHeight() / 2;
+	int xColl = x + (Sprite::getSize() / 2) + display->getWidth() / 2;
+	int yColl = y + (Sprite::getSize() / 2) + display->getHeight() / 2;
 
 	switch(direction) {
 	case 0:
@@ -172,43 +165,32 @@ bool Player::isCollision(Display* display) {
 
 bool Player::isSliding(Display* display) {
 	Sprite* currentTile;
-	int xSlide = x + display->getWidth() / 2;
-	int ySlide = y + display->getHeight() / 2;
+	int xSlide = x + (Sprite::getSize() / 2) + display->getWidth() / 2;
+	int ySlide = y + (Sprite::getSize() / 2) + display->getHeight() / 2;
 	currentTile = display->getSprite(xSlide >> 4, ySlide >> 4);
 
 	if(currentTile->isSliding() && !isCollision(display)) {
+
+		currentlySliding = true;
 		
 		if(direction == 0) {
 			y-=2;
-			yAnimate = 8;
 		}
 		
 		if(direction == 1) {
-			y++;
-			yAnimate = 8;
-			if(!isCollision(display)) {
-				y++;
-			} else {
-				yAnimate = 0;
-			}
+			y+=2;
 		}
 		
 		if(direction == 2) {
-			x--;
-			if(!isCollision(display)) x--;
-			xAnimate = 8;
+			x-=2;
 		}
 
 		if(direction == 3) {
-			x++;
-			xAnimate = 8;
-			if(!isCollision(display)) {
-				x++;
-			} else {
-				xAnimate = 0;
-			}
+			x+=2;
 		}
 		return true;
+	} else {
+		currentlySliding = false;
 	}
 
 	return false;
