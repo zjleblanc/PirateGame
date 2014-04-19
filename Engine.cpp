@@ -1,12 +1,12 @@
 #include "SDL.h"
 #include "SDL_image.h"
-#include "Entity.h"
 #include "Keyboard.h"
+#include "Mouse.h"
 #include "TextWriter.h"
 #include "AudioHandler.h"
 #include "Player.h"
 #include "NPC.h"
-#include "Chest.h"
+#include "Entity.h"
 #include "Display.h"
 #include "SDL_ttf.h"
 #include "SDL_mixer.h"
@@ -14,6 +14,9 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <vector>
+#include <Windows.h>
+#include <stdio.h>
 using namespace std;
 
 ////////////////////////// GLOBALS //////////////////////////////////////////////
@@ -34,16 +37,17 @@ public:
 	void render();
 	bool start();
 private:
+	void eliminateCollisions();
 	const int WIDTH, HEIGHT, BPP;
+	int leftReleased, rightReleased;
 	Keyboard *keyboard;
+	Mouse *mouse;
 	Display *display;
 	TextWriter *textWriter;
 	AudioHandler* audio;
 	Player *player;
-	Mobile *rando;
-	Mobile *rando2;
-	Chest *chest;
-	Chest *chest2;
+	//Mobile *rando;
+	vector< Mobile * > randos;
 };
 
 ////////////////////////// ENGINE FUNCTIONS /////////////////////////////////////
@@ -57,19 +61,20 @@ Engine::Engine()
 		close();
 	}
 
+	leftReleased=1;
+	rightReleased=1;
 	keyboard = new Keyboard();
+	mouse = new Mouse();
 	display = new Display(WIDTH, HEIGHT);
 	textWriter = new TextWriter(30);
 	player = new Player("Player3.png");
 	player->setLocation(WIDTH, HEIGHT);
-	rando = new NPC("Player3.png", 5, WIDTH / 16, HEIGHT / 16);
-	rando2 = new NPC ("Player3.png", 5, WIDTH / 16 + 1, HEIGHT / 16 + 1);
+	//rando = new NPC("Player3.png", 5, (WIDTH) / 16, (HEIGHT) / 16);
+	for(int i=-5; i<6; i++){
+		Mobile * temp = new NPC("Player3.png", 50, (WIDTH + 32*i) / 16, (HEIGHT+32*i) / 16);
+		randos.push_back(temp);
+	}
 	audio = new AudioHandler();
-	
-	chest = new Chest(30, 25);
-	display->addChest(chest);
-	chest2 = new Chest (20, 15);
-	display->addChest(chest2);
 
 	audio->initialize();
 	audio->play(LANDMUSIC);
@@ -77,9 +82,12 @@ Engine::Engine()
 
 Engine::~Engine() {
 	delete keyboard;
+	delete mouse;
 	delete display;
 	delete textWriter;
 	delete player;
+	for(int i=0; i<randos.size(); i++)
+		delete randos[i];
 }
 
 bool Engine::start() {
@@ -99,12 +107,23 @@ bool Engine::start() {
 	
 	SDL_WM_SetCaption("Reef Raider", NULL);
 
+	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+
 	return true;
 }
 
 void Engine::close() {
 	SDL_Quit();
 	delete this;
+}
+
+void Engine::eliminateCollisions(){
+	for(int i=0; i<randos.size(); i++){
+		if(randos[i]->getX()/16 == player->getX()/16 && randos[i]->getY()/16 == player->getY()/16){
+			randos.erase(randos.begin()+i);
+			return;
+		}
+	}
 }
 
 void Engine::run() {
@@ -147,10 +166,32 @@ void Engine::run() {
 }
 
 void Engine::update() {
-
+	if(!leftReleased)
+		if(mouse->buttonReleased(1)) leftReleased=1;
+	if(!rightReleased)
+		if(mouse->buttonReleased(3)) rightReleased=1;
 	player->update(display);
-	rando->update(display);
-	rando2->update(display);
+	//if(updateTimer!=0) updateTimer++;	//timer used to correct multiple spawns from one click
+	//if(updateTimer>=10) updateTimer=0;
+	//rando->update(display);
+	if(mouse->buttonPressed()==1 && leftReleased && randos.size() > 0){ //last check to prevent crash when left click and no NPCs present
+		randos.pop_back();
+		leftReleased=0;
+	}
+	else if(mouse->buttonPressed()==3 && rightReleased){ 
+		//add new NPC at location of mouse click
+		randos.push_back(new NPC("Player3.png", 50,player->getX()/16 - 20 + mouse->getX()/16,player->getY()/16 - 15 + mouse->getY()/16));
+		rightReleased=0;
+	}
+	/*ostringstream os_;    
+	os_ << "X: " << player->getX()/16 << " Y: " << player->getY()/16 << endl;
+	os_ << "X: " << randos[1]->getX()/16 << " Y: " << randos[1]->getY()/16 << endl; 
+	OutputDebugString( os_.str().c_str() );  // Debugging Player location */
+	Engine::eliminateCollisions();
+
+	for(int i=0; i<randos.size(); i++){
+		randos[i]->update(display);
+	}
 
 	int xp = player->getX();
 	int yp = player->getY();
@@ -171,12 +212,12 @@ void Engine::render() {
 	display->render(screen);
 	player->render(WIDTH/2, HEIGHT/2, screen);
 	player->renderAttrib(screen, display);
-	int xR = (WIDTH/2) + (rando->getX() - player->getX());
-	int yR = (HEIGHT/2) + (rando->getY() - player->getY());
-	int xR2 = (WIDTH/2) + (rando2->getX() - player->getX());
-	int yR2 = (HEIGHT/2) + (rando2->getY() - player->getY());
-	rando->render(xR, yR, screen);
-	rando2->render(xR2, yR2, screen);
+	for(int i=0; i<randos.size(); i++){
+		int xR = (WIDTH/2) + (randos[i]->getX() - player->getX());
+		int yR = (HEIGHT/2) + (randos[i]->getY() - player->getY());
+		randos[i]->render(xR,yR,screen);
+	}
+	//rando->render(xR, yR, screen);
 	//textWriter->write(display->getCurrentTile(), 50, 50, screen);
 	//textWriter->write(display->getOffsets(), 50, 50, screen);
 	//display->getOffsets();
@@ -188,7 +229,6 @@ void Engine::render() {
 int main(int argc, char **args) {
 	Engine *engine = new Engine;
 
-	cout << "HELLO" << endl;
 	if(!engine->start()) {
 		return 1;
 	}
