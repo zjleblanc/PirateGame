@@ -9,12 +9,11 @@ public:
 	void update();
 	int getX();
 	int getY();
-	bool isLeftPressed();
-	bool isRightPressed();
+	int buttonPressed();
+	int buttonReleased(int);
 private:
-	Uint32 button;
-	int x;
-	int y;
+	int x, y;
+	SDL_Event mouseEvent;
 };
 
 #endif

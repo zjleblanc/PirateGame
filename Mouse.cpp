@@ -1,25 +1,37 @@
 #include "Mouse.h"
 
 Mouse::Mouse() {
-	button = SDL_GetMouseState(&x,&y);
+	x = 0, y = 0;
 }
 
 void Mouse::update() {
-	button = SDL_GetMouseState(&x,&y);
+	if(SDL_PollEvent(&mouseEvent)) {
+		if(mouseEvent.type == SDL_MOUSEMOTION) {
+			x = mouseEvent.motion.x;
+			y = mouseEvent.motion.y;
+		}
+	}
 }
 
-bool Mouse::isLeftPressed() {
-	return ( SDL_GetMouseState(&x,&y) & SDL_BUTTON(1) );
+int Mouse::buttonPressed(){
+	SDL_PumpEvents();
+	if(SDL_GetMouseState(&x,&y)&SDL_BUTTON(1)) return 1;		//left button pressed
+	else if(SDL_GetMouseState(&x,&y)&SDL_BUTTON(3)) return 3;  //right button pressed
+	else return 0; //no button / middle pressed
 }
 
-bool Mouse::isRightPressed() {
-	return ( SDL_GetMouseState(&x,&y) & SDL_BUTTON(3) );
+int Mouse::buttonReleased(int button){
+	if(button==buttonPressed())
+		return 0;
+	else
+		return 1;
 }
 
-int Mouse::getX(){
-		return x;
+
+int Mouse::getX() {
+	return x;
 }
 
-int Mouse::getY(){
-		return y;
+int Mouse::getY() {
+	return y;
 }
