@@ -1,11 +1,9 @@
 #include "Chest.h"
 #include <iostream>
 #include <fstream>
-#include <string>
 using namespace std;
 
 Chest::Chest(int xplace, int yplace)
-	: Entity("Terrain.png")
 {
 	x = xplace;
 	y = yplace;
@@ -43,6 +41,4 @@ void Chest::openChest(){
 	open = 1;
 }
 
-void Chest::update(Display* display) {
 
-}
