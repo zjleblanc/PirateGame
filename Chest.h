@@ -3,7 +3,7 @@
 
 using namespace std;
 
-class Chest : public Entity {
+class Chest {
 public:
 	Chest(int, int);
 	int getx();
