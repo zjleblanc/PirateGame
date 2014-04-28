@@ -2,13 +2,18 @@
 #include <sstream>
 
 Player::Player(string sheetName) 
-	:Mobile(sheetName)
+	:Mobile(sheetName, 1),
+	playerHUD("HUD.png", 100, 200)
 {
 	keyboard = new Keyboard();
 	left_projectile = new Projectile("Cannonball.png");
 	right_projectile = new Projectile("Cannonball.png");
 	shipState = false;
 	playerVessel = new Ship(CUTTER, "Ships.png"); 
+	numProjectiles = 200;
+	playerHUD.setCurrentShot(numProjectiles);
+	maxHealth = 100;
+	currentHealth = 100;
 }
 
 Player::~Player() {
@@ -18,7 +23,15 @@ Player::~Player() {
 }
 
 void Player::update(Display* display) { 
+
 	keyboard->update();
+
+	playerVessel->update(display);
+
+	left_projectile->updateParticles(display);
+	right_projectile->updateParticles(display);
+	playerHUD.setCurrentHealth((double)currentHealth);
+
 	if(left_projectile->isActive()) {
 		left_projectile->update(display);
 		right_projectile->update(display);
@@ -32,11 +45,10 @@ void Player::update(Display* display) {
 }
 
 void Player::renderAttrib(SDL_Surface* screen, Display* display) {
-	opening(screen, display);
-	if(left_projectile->isActive()) {
-		left_projectile->render((display->getWidth() / 2) - x, (display ->getHeight() / 2) - y, screen);
-		right_projectile->render((display->getWidth() / 2) - x, (display ->getHeight() / 2) - y, screen);
-	}
+	openChest(display, screen);
+	playerHUD.render(0, 0, screen);
+	left_projectile->render((display->getWidth() / 2) - x, (display ->getHeight() / 2) - y, screen);
+	right_projectile->render((display->getWidth() / 2) - x, (display ->getHeight() / 2) - y, screen);
 }
 
 void Player::renderLand(int xp, int yp, SDL_Surface* screen) {
@@ -86,6 +98,7 @@ void Player::renderLand(int xp, int yp, SDL_Surface* screen) {
 }
 
 void Player::renderSea(int x, int y, SDL_Surface* screen) {
+	playerVessel->setDirection(direction);
 	playerVessel->render(x,y,screen);
 }
 
@@ -101,38 +114,38 @@ void Player::processInput(Display* display) {
 	
 	toBoat(display);
 
+	bool onWater = ((getCurrentTile(display) == display->getWaterHandle(1)) || getCurrentTile(display) == display->getWaterHandle(2));
+	bool waterAdjacent = ((getNextTile(display) == display->getWaterHandle(1)) || getNextTile(display) == display->getWaterHandle(2));
+	bool shoalAdjacent = ((getNextTile(display))->isSolid()) && !waterAdjacent;
+
 	if(keyboard->getState(SDLK_x) && !left_projectile->isActive() && shipState) {
 		fireProjectile();
 	} 
 
 	if(keyboard->getState(SDLK_UP)) { 
 		direction = 0;
-		playerVessel->setDirection(0);
-		if(!isCollision(display)) {
+		if(!isCollision(display) || (shipState && onWater && !shoalAdjacent)) {
 			y--;
 		}
 	}
 
 	else if(keyboard->getState(SDLK_DOWN)) {
 		direction = 2;
-		playerVessel->setDirection(2);
-		if(!isCollision(display)) {
+		if(!isCollision(display) || (shipState && onWater && !shoalAdjacent)) {
 			y++;
 		}
 	}
 	
 	else if(keyboard->getState(SDLK_LEFT)) {
 		direction = 3;
-		playerVessel->setDirection(3);
-		if(!isCollision(display)) {
+		if(!isCollision(display) || (shipState && onWater && !shoalAdjacent)) {
 			x--;
 		}
 	}
 	
 	else if(keyboard->getState(SDLK_RIGHT)) {
 		direction = 1;
-		playerVessel->setDirection(1);
-		if(!isCollision(display)) {
+		if(!isCollision(display) || (shipState && onWater && !shoalAdjacent)) {
 			x++;
 		}
 	}
@@ -142,30 +155,41 @@ void Player::toBoat(Display* display) {
 	if(!((getCurrentTile(display) == display->getWaterHandle(1)) || getCurrentTile(display) == display->getWaterHandle(2))) {
 		shipState = false;
 	}
-	if(keyboard->getState(SDLK_z)) {
+	if(keyboard->getState(SDLK_z) && !shipState) {
 		if((getNextTile(display) == display->getWaterHandle(1)) || (getNextTile(display) == display->getWaterHandle(2))) {
 			shipState = true;
 			goToNext();
 		}
 	}
+	else if((getCurrentTile(display) == display->getWaterHandle(1)) || (getCurrentTile(display) == display->getWaterHandle(2))) {
+		shipState = true;
+	}
 }
 
-
 void Player::fireProjectile() {
+
 	left_projectile->setLocation(x,y);
 	right_projectile->setLocation(x,y);
+
 	left_projectile->setDirection((direction + 1) & 3);
 	right_projectile->setDirection((direction - 1) & 3);
-	left_projectile->fire();
-	right_projectile->fire();
+
+	if(numProjectiles > 0) {
+		left_projectile->fire();
+		right_projectile->fire();
+		numProjectiles -= 2;
+		playerHUD.setCurrentShot(numProjectiles);
+	}
+
 }
 
 bool Player::isSailing() {
 	return shipState;
 }
 
-void Player::opening(SDL_Surface* screen, Display* display){
+void Player::openChest(Display* display, SDL_Surface* screen){
 	if(keyboard->getState(SDLK_a) && (getNextTile(display) == display->getChestHandle(1))) {
+		playerHUD.IncreaseDoubloons();
 		int xColl = x + 8;
 		int yColl = y + 8;
 		int cx, cy;
@@ -187,7 +211,8 @@ void Player::opening(SDL_Surface* screen, Display* display){
 					cy = (yColl >> 4);
 					break;
 			}
-			display->openChest(cx, cy);
+			display->openChest(cy);
 		}
 }
+	
 
