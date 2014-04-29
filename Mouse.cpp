@@ -1,4 +1,5 @@
 #include "Mouse.h"
+#include "Player.h"
 
 Mouse::Mouse() {
 	x = 0, y = 0;
@@ -34,4 +35,12 @@ int Mouse::getX() {
 
 int Mouse::getY() {
 	return y;
+}
+
+int Mouse::getXtile(Player *player){
+		return player->getX()/16 - 20 + Mouse::getX()/16;
+}
+
+int Mouse::getYtile(Player *player){
+		return player->getY()/16 - 15 + Mouse::getY()/16;
 }
