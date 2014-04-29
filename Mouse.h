@@ -1,4 +1,5 @@
 #include "SDL.h"
+#include "Player.h"
 
 #ifndef MOUSE_H
 #define MOUSE_H
@@ -9,6 +10,8 @@ public:
 	void update();
 	int getX();
 	int getY();
+	int getXtile(Player*);
+	int getYtile(Player*);
 	int buttonPressed();
 	int buttonReleased(int);
 private:
