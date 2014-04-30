@@ -5,18 +5,10 @@
 using namespace std;
 
 Chest::Chest(int xplace, int yplace){
-	x = (xplace / 2);
-	y = yplace;
+	x = xplace;		//set x and y coordinates for Chest
+	y = yplace;		//used to identify chests in chestArray in display
 	open = 0;
 
-	string line;
-	fstream file("MainMap.txt", ios::in | ios::out);
-	for(int i = 0; i < yplace; i++){
-		getline(file, line);
-	}
-	file.seekp(xplace, ios_base::cur);
-	file << "C";
-	file.close();
 	
 }
 		
