@@ -7,7 +7,7 @@ class Keyboard {
 public:
 	Keyboard();
 	void update(); // update keys state
-	bool getState(SDLKey); // return key state for specific key
+	bool getState(SDLKey); // check if SDLKEY is pressed or unpressed
 private:
 	Uint8* keys;
 };
