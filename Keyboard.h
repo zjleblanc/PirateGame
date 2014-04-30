@@ -6,8 +6,8 @@
 class Keyboard {
 public:
 	Keyboard();
-	void update();
-	bool getState(SDLKey);
+	void update(); // update keys state
+	bool getState(SDLKey); // return key state for specific key
 private:
 	Uint8* keys;
 };
