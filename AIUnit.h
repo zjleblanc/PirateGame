@@ -1,3 +1,5 @@
+// This class handles all enemies that make use of AI state machines 
+
 #include "Mobile.h"
 #include "Player.h"
 #include "HealthBar.h"
@@ -13,9 +15,15 @@ public:
 	AI_Unit(string, int, int, int, int, int);
 	~AI_Unit();
 	virtual void update(Display*) = 0;
-	virtual void runAI(Player*) = 0;
-	bool isAggro();
+	virtual void runAI(Player*, Display*) = 0;
+	virtual void renderAttrib(SDL_Surface*, Display*, Player*) = 0;
 	void subHealth(int);
+	bool isSunk();
+	bool canContactDamage();
+	void sink();
+	double getDoubloons();
+	bool isPillaged();
+	void setPillaged();
 protected:
 	int xInit, yInit;
 	int range;
@@ -24,9 +32,9 @@ protected:
 	int updateCount;			// updateCount % difficulty determines how fast AI can respond to events
 	int difficulty;				// lower # -> higher difficulty
 	HealthBar* enemyHealth;
-private:
-	bool aggro;
-	int attackDamage;
+	bool sunk;
+	bool contactDamages;
+	bool pillaged;
 };
 
 #endif
