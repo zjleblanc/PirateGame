@@ -5,36 +5,42 @@
 #include <string>
 using namespace std;
 
+// CONSTRUCTOR (FILE GENERATED MAPS)
+
 Area::Area(string path) {
+
 	fileName = path;
 
-	ifstream areaFile(path.c_str());
+	ifstream areaFile(path.c_str());					// prepares input file
 
-	vector<char> temp;
+	vector<char> temp;									// stores each line as a temporary vector
 	string currentLine;
-	int i;
+	height = 0;
+	unsigned int i;
 
 	while(!areaFile.eof()) {
 		
-		temp.clear();
+		temp.clear();									// clear last line in temp, load in next line
 		getline(areaFile,currentLine); 
 		
 		for(i = 0; i < currentLine.length(); i++) {
 			if(currentLine[i] != ' ') {
-				temp.push_back(currentLine[i]);
+				temp.push_back(currentLine[i]);			// adds chars from file to vector
 			}
 		}
 		
-		tileIndex.push_back(temp);
-	
+		height++;
+		tileIndex.push_back(temp);						// pushes line into map vector
+		
 	}
 
-	width = i;
-	height = tileIndex[0].size();
+	width = tileIndex[0].size();
 
 }
 
-Area::Area(int areaW, int areaH) {
+// CONSTRUCTOR (RANDOMLY GENERATED MAPS - used for debugging)
+
+/* Area::Area(int areaW, int areaH) {
 	srand(time(NULL));
 
 	height = areaH;
@@ -47,13 +53,16 @@ Area::Area(int areaW, int areaH) {
 		for(int x = 0; x < width; x++) {
 			switch(rand() % 8) {
 			case 0:
-				temp.push_back('G');
+				temp.push_back('I');
 				break;
 			case 1:
-				temp.push_back('B');
+				temp.push_back('G');
 				break;
 			case 2:
-				temp.push_back('A');
+				temp.push_back('W');
+				break;
+			case 3: 
+				temp.push_back('B');
 				break;
 			default:
 				temp.push_back('I');
@@ -64,16 +73,24 @@ Area::Area(int areaW, int areaH) {
 		temp.clear();
 
 	}
-}
+} */
 
-int Area::getWidth() {
+// PUBLIC METHODS
+
+// GETTERS AND SETTERS
+
+int Area::getWidth() const {
 	return width;
 }
 
-int Area::getHeight() {
+int Area::getHeight() const {
 	return height;
 }
 
 char Area::getTile(int x, int y) {
 	 return tileIndex[y][x];
+}
+
+string Area::getPath() const{
+	return fileName;
 }
