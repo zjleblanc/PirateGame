@@ -1,6 +1,5 @@
 #include "SDL.h"
 #include "SDL_image.h"
-#include "Chest.h"
 #include "Keyboard.h"
 #include "AudioHandler.h"
 #include "Player.h"
@@ -8,10 +7,16 @@
 #include "NPC.h"
 #include "Warp.h"
 #include "Pirate.h"
+#include "Iceberg.h"
 #include "Entity.h"
 #include "Display.h"
+#include "CollisionHandler.h"
 #include "SDL_ttf.h"
 #include "SDL_mixer.h"
+#include "Windows.h"
+#include <cmath>
+#include <ctime>
+#include <cstdlib>
 #include <vector>
 #include <fstream>
 #include <sstream>
@@ -32,8 +37,10 @@ public:
 	~Engine();
 	void close();
 	void run();
+	void runTitle();
+	void runClosing();
 	void loadObjects();
-	void loadWarps();
+	void loadNPCs();
 	void loadEnemies();
 	void update();
 	void render();
@@ -44,64 +51,84 @@ private:
 	Display *display;
 	AudioHandler* audio;
 	Player *player;
-	Mobile *rando;
 	Area* mainArea;
 	Area* house;
 	Chest* chest1;
 	Chest* chest2;
 	Chest* chest3;
-	vector<Pirate*> enemies;
+	Chest* chest4;
+	CollisionHandler* ch;
+	vector<AI_Unit*> enemies;
 	vector<WorldObject*> objects;
 	vector<Warp*> warps;
+	vector<NPC*> NPCs;
+	int enemyCount;
 };
 
 ////////////////////////// ENGINE FUNCTIONS /////////////////////////////////////
+
+// CONSTRUCTOR
 
 Engine::Engine() 
 	: WIDTH(640),
 	HEIGHT(480),
 	BPP(32) {
 
+	srand(time(NULL));
+
 	if(!start()) {
 		close();
 	}
 
 	keyboard = new Keyboard();
+
 	display = new Display(WIDTH, HEIGHT);
 
+	ch = new CollisionHandler();
+
 	mainArea = new Area("MainMap.txt");
-	house = new Area("House.txt");
-	chest1 = new Chest(164, 24);
-	chest2 = new Chest(274, 59);
-	chest3 = new Chest(290, 33);
+
+	chest1 = new Chest(164, 99);
 	display->addChest(chest1);
+	chest2 = new Chest(261, 86);
 	display->addChest(chest2);
+	chest3 = new Chest(314, 84);					// set up chests
 	display->addChest(chest3);
+	chest4 = new Chest(146, 22);
+	display->addChest(chest4);
 
 	display->setArea(mainArea);
 
 	player = new Player("Player3.png");
+
 	player->setLocation(85 * 16, 85 * 16);
-	rando = new NPC("Player3.png", 5, WIDTH / 16, HEIGHT / 16);
 	audio = new AudioHandler();
 
 	audio->initialize();
-	audio->play(LANDMUSIC);
+	audio->play(OPENINGMUSIC);
 }
+
+// DECONSTRUCTOR
 
 Engine::~Engine() {
 	delete keyboard;
 	delete display;
 	delete player;
+	delete chest1;
 	for(int i = 0; i < objects.size(); i++) {
 		delete objects[i];
 	}
 	for(int i = 0; i < enemies.size(); i++) {
 		delete enemies[i];
 	}
+	for(int i = 0; i < NPCs.size(); i++) {
+		delete NPCs[i];
+	}
 }
 
-bool Engine::start() {
+// METHODS
+
+bool Engine::start() {					// starts engine, called immediately
 
 	// Open SDL
 
@@ -119,7 +146,7 @@ bool Engine::start() {
 	SDL_WM_SetCaption("Reef Raider", NULL);
 
 	loadObjects();
-	loadWarps();
+	loadNPCs();
 	loadEnemies();
 
 	return true;
@@ -136,10 +163,10 @@ void Engine::run() {
 	Uint32 last = SDL_GetTicks();
 	Uint32 timer = last;
 	Uint32 now;
-	int upsPerSecond = 100;
+	int upsPerSecond = 70;
 	int frames = 0;
 
-	while(!quit) {
+	while(!quit && (player->getHealth() != 0)) {			// only update a fixed number of times a second
 		now = SDL_GetTicks();
 
 		if((now - last) > (1000/upsPerSecond)) {
@@ -148,10 +175,10 @@ void Engine::run() {
 			display->ctrIncrement();
 		}
 
-		render();
+		render();						// but render as fast as possible
 		frames++;
 
-		if(timer - now >= 1000) {
+		if(timer - now >= 1000) {									// FPS counter
 			stringstream fps;
 			fps << "Reef Raider   |   " << frames << " FPS";
 			SDL_WM_SetCaption(fps.str().c_str(), NULL);
@@ -160,11 +187,71 @@ void Engine::run() {
 		}
 
 		if(SDL_PollEvent(&event)) {
-			if(event.type == SDL_QUIT) {
+			if(event.type == SDL_QUIT) {					// quit if x is clicked
 				quit = true;
 			}
 		}
 
+	}
+
+}
+
+void Engine::runTitle() {				// runs initial screen
+
+	bool advance = false;
+
+	SDL_Surface* loadedImage = NULL;
+	SDL_Surface* optImage = NULL;
+
+	loadedImage = IMG_Load("TitleScreen.png");
+
+	if(loadedImage != NULL) {
+		optImage = SDL_DisplayFormat(loadedImage);
+		SDL_FreeSurface(loadedImage);
+	}
+
+	SDL_BlitSurface(optImage, NULL, screen, NULL);
+	SDL_Flip(screen);
+
+	while(!advance) {
+		if(SDL_PollEvent(&event)) {
+			if(event.type = SDL_KEYDOWN) {
+				if(event.key.keysym.sym == SDLK_r) {			// only start game when r is pressed
+					advance = true;
+				}
+			}
+		}
+	}
+
+	SDL_FreeSurface(optImage);
+
+}
+
+void Engine::runClosing() {
+
+	bool quit = false;
+
+	audio->switchTo(CLOSINGMUSIC);
+
+	SDL_Surface* loadedImage = NULL;
+	SDL_Surface* optImage = NULL;
+
+	loadedImage = IMG_Load("EndScreen.png");				// start closing music, display end screen
+
+	if(loadedImage != NULL) {
+		optImage = SDL_DisplayFormat(loadedImage);
+		SDL_FreeSurface(loadedImage);
+	}
+
+	SDL_BlitSurface(optImage, NULL, screen, NULL);
+	SDL_Flip(screen);
+
+	while(!quit) {
+		if(SDL_PollEvent(&event)) {
+			if(event.type == SDL_QUIT) {					// quit if x is clicked
+				quit = true;
+			}
+		}
 	}
 
 }
@@ -197,85 +284,158 @@ void Engine::loadObjects() {
 	objects.push_back(new WorldObject("Terrain.png", 0, 9, 4, 4, 50, 45));
 	objects.push_back(new WorldObject("Terrain.png", 0, 9, 4, 4, 59, 45));
 
-	//Random Island
-	objects.push_back(new WorldObject("Terrain.png", 11, 10, 2, 2, 83, 23));
+	// OLD ISLAND BEACH
 
-	//Old Isle : Beach
-	objects.push_back(new WorldObject("Terrain.png", 13, 10, 2, 2, 117, 78));
-	objects.push_back(new WorldObject("Terrain.png", 11, 10, 2, 2, 126, 81));
-	objects.push_back(new WorldObject("Terrain.png", 11, 9, 1, 1, 110, 80));
-	objects.push_back(new WorldObject("Terrain.png", 11, 9, 1, 1, 139, 84));
-	//Old Isle : Houses
-	objects.push_back(new WorldObject("Terrain.png", 4, 12, 4, 4, 103, 54));
-	objects.push_back(new WorldObject("Terrain.png", 0, 16, 4, 3, 113, 64));
-	objects.push_back(new WorldObject("Terrain.png", 8, 12, 4, 4, 124, 58));
-	objects.push_back(new WorldObject("Terrain.png", 12, 12, 4, 4, 136, 64));
+	objects.push_back(new WorldObject("Terrain.png", 13, 10, 2, 2, 237, 109));
+	objects.push_back(new WorldObject("Terrain.png", 11, 10, 2, 2, 246, 112));
+	objects.push_back(new WorldObject("Terrain.png", 11, 9, 1, 1, 230, 111));
+	objects.push_back(new WorldObject("Terrain.png", 11, 9, 1, 1, 259, 115));
+
+	// OLD ISLAND BUILDINGS
+
+	objects.push_back(new WorldObject("Terrain.png", 4, 12, 4, 4, 223, 85));
+	objects.push_back(new WorldObject("Terrain.png", 0, 16, 4, 3, 233, 95));
+	objects.push_back(new WorldObject("Terrain.png", 8, 12, 4, 4, 244, 89));
+	objects.push_back(new WorldObject("Terrain.png", 12, 12, 4, 4, 256, 95));
+
 }
 
-void Engine::loadWarps() {
-	warps.push_back(new Warp("Ships.png", 50, 22, 8, 15, mainArea, house));
+void Engine::loadNPCs() {
+	NPCs.push_back(new NPC("Player3R.png", 10, WIDTH / 16, HEIGHT / 16));
+	NPCs.push_back(new NPC("Player3R.png", 10, 41, 36));
+	NPCs.push_back(new NPC("Player3R.png", 10, 26, 50));
+	NPCs.push_back(new NPC("Player3R.png", 10, 50, 57));
+	NPCs.push_back(new NPC("Player3R.png", 10, 234, 113));
+	NPCs.push_back(new NPC("Player3R.png", 10, 253, 109));
+	NPCs.push_back(new NPC("Player3R.png", 10, 253, 90));
+	NPCs.push_back(new NPC("Player3R.png", 10, 225, 97));
 }
 
-void Engine::loadEnemies() {
-	enemies.push_back(new Pirate("PirateShip.png", 100, 100, 50, 10, 2, AGGRESSIVE));
-	enemies.push_back(new Pirate("PirateShip.png", 80, 80, 50, 10, 2, AGGRESSIVE));
-	enemies.push_back(new Pirate("PirateShip.png", 89, 93, 50, 10, 2, AGGRESSIVE));
+void Engine::loadEnemies() {																	
+	enemies.push_back(new Pirate("PirateShip.png", 100, 100, 50, 10, 2));
+	enemies.push_back(new Pirate("PirateShip.png", 80, 80, 50, 10, 2));
+	enemies.push_back(new Pirate("PirateShip.png", 89, 93, 50, 10, 2));
+	enemies.push_back(new Pirate("PirateShip.png", 100, 50, 50, 10, 2));
+
+	enemies.push_back(new Pirate("PirateShip.png", 190, 100, 50, 10, 2));
+	enemies.push_back(new Pirate("PirateShip.png", 190, 100, 50, 10, 2));
+
+	for(int i = 0; i < 8; i++) {
+		enemies.push_back(new Pirate("PirateShip.png", 300, 40, 50, 10, 2));
+		enemies.push_back(new Pirate("PirateShip.png", 200, 40, 50, 10, 2));		
+		enemies.push_back(new Pirate("PirateShip.png", 150, 40, 50, 10, 2));
+		enemies.push_back(new Pirate("PirateShip.png", 50, 110, 50, 10, 2));
+	}
+
+	for(int i = 0; i < 6; i++) {
+		enemies.push_back(new Iceberg("Iceberg.png", 300, 100, 50, 10, 2));
+	}
+
+	enemies.push_back(new Iceberg("Iceberg.png", 110, 110, 50, 10, 2));
+
+	enemyCount = 37;
 }
 
 void Engine::update() {
 
 	Area* currentArea = display->getCurrentArea();
 
-	for(int i = 0; i < warps.size(); i++) {
-		warps[i]->probeCollision(player, currentArea);
+	display->setArea(currentArea);
+
+	player->update(display);
+
+	for(int i = 0; i < NPCs.size(); i++) {
+		NPCs[i]->update(display);
 	}
 
-	display->setArea(currentArea);
-	player->update(display);
-	rando->update(display);
-
-	for(int i = 0; i < enemies.size(); i++) {
+	for(int i = 0; i < enemies.size(); i++) {				// update player, NPCs, enemies
 		enemies[i]->update(display);
-		enemies[i]->runAI(player);
+		enemies[i]->runAI(player, display);
 	}
 
 	int xp = player->getX();
 	int yp = player->getY();
 
-	display->setOffsets(xp - WIDTH / 2, yp - HEIGHT / 2);
+	display->setOffsets(xp - WIDTH / 2, yp - HEIGHT / 2);				// update display based on player
 
 	if(player->isSailing()) {
-		audio->switchTo(LANDMUSIC);
+		audio->switchTo(BOATMUSIC);
 	} 
+	else if(player->getCurrentTile(display) == display->getIceHandle()) {				// update audio
+		audio->switchTo(ICEMUSIC);
+	}
 	else if(!(player->isSailing())) {
 		audio->switchTo(LANDMUSIC);
+	}
+
+	ch->handleAI_to_Projectile();
+	ch->handlePlayer_to_Projectile(player);												// update collisions
+	ch->handleAI_to_Player(player);
+
+	if(enemyCount < 5) {															// make new enemies
+
+		int xSpawn, ySpawn;
+
+		do {
+
+			double rads = ((rand() % 360) * 3.14) / 180;
+			ySpawn = (10 * sin(rads)) + (player->getX() >> 4);
+			xSpawn = (10 * cos(rads)) + (player->getY() >> 4);
+
+		} while(!(display->getSprite(xSpawn,ySpawn) == display->getWaterHandle(1)) && !(display->getSprite(xSpawn,ySpawn) == display->getWaterHandle(2)));
+
+		if(rand() % 10 < 3) {
+			enemies.push_back(new Iceberg("Iceberg.png", xSpawn, ySpawn, 50, 10, 2));
+		}
+		else {
+			enemies.push_back(new Pirate("PirateShip.png", xSpawn, ySpawn, 50, 10, 2));
+		}
+
 	}
 
 }
 
 void Engine::render() {
-	SDL_FillRect(screen, NULL, 0x000000);
+	SDL_FillRect(screen, NULL, 0x000000);						// clear the screen
 	display->render(screen);
 
 	for(int i = 0; i < objects.size(); i++) {
 		int xRender = objects[i]->getX() - display->getXOffset();
-		int yRender = objects[i]->getY() - display->getYOffset();
+		int yRender = objects[i]->getY() - display->getYOffset();			// render the display, characters, objects
 		objects[i]->render(xRender, yRender, screen);
 	}
 
 
 	for(int i = 0; i < enemies.size(); i++) {
-		int xP = (WIDTH/2) + (enemies[i]->getX() - player->getX());
-		int yP = (HEIGHT/2) + (enemies[i]->getY() - player->getY());
+		if(enemies[i]->isSunk()) {
+			int xP = (WIDTH/2) + (enemies[i]->getX() - player->getX());
+			int yP = (HEIGHT/2) + (enemies[i]->getY() - player->getY());
 
-		enemies[i]->render(xP, yP, screen);
-		enemies[i]->renderAttrib(screen, display, player);
+			enemies[i]->render(xP, yP, screen);
+			enemies[i]->renderAttrib(screen, display, player);
+		}
 	}
 
-	int xR = (WIDTH/2) + (rando->getX() - player->getX());
-	int yR = (HEIGHT/2) + (rando->getY() - player->getY());
-	rando->render(xR, yR, screen);
-	
+	enemyCount = 0;
+
+	for(int i = 0; i < enemies.size(); i++) {
+		if(!enemies[i]->isSunk()) {
+			int xP = (WIDTH/2) + (enemies[i]->getX() - player->getX());
+			int yP = (HEIGHT/2) + (enemies[i]->getY() - player->getY());
+
+			enemies[i]->render(xP, yP, screen);
+			enemies[i]->renderAttrib(screen, display, player);
+			enemyCount++;
+		}
+	}
+
+	int xR, yR;
+
+	for(int i = 0; i < NPCs.size(); i++) {
+		xR = (WIDTH/2) + (NPCs[i]->getX() - player->getX());
+		yR = (HEIGHT/2) + (NPCs[i]->getY() - player->getY());
+		NPCs[i]->render(xR, yR, screen);
+	}
 
 	player->render(WIDTH/2, HEIGHT/2, screen);
 	player->renderAttrib(screen, display);
@@ -288,11 +448,13 @@ void Engine::render() {
 int main(int argc, char **args) {
 	Engine *engine = new Engine;
 
-	if(!engine->start()) {
-		return 1;
-	}
+	engine->runTitle();
 
 	engine->run();
 
+	engine->runClosing();
+
 	engine->close();
+
+	return 1;
 }
