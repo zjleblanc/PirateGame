@@ -1,3 +1,5 @@
+// Parent class for all entities that are rendered to the display
+
 #include "SpriteSheet.h"
 #include "Display.h"
 #include <string>
