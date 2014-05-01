@@ -1,13 +1,17 @@
 #include "Keyboard.h"
 
-Keyboard::Keyboard() {
-	keys = SDL_GetKeyState(NULL); //initialize key states
-}
+// CONSTRUCTOR
 
-void Keyboard::update() { //update key states for all keys
+Keyboard::Keyboard() {
 	keys = SDL_GetKeyState(NULL);
 }
 
-bool Keyboard::getState(SDLKey INDEX) { //return true if INDEX is pressed, 0 if unpressed
+//PUBLIC METHODS
+
+void Keyboard::update() {				// update the array for constant evaluation
+	keys = SDL_GetKeyState(NULL);
+}
+
+bool Keyboard::getState(SDLKey INDEX) {
 	return keys[INDEX];
 }
