@@ -4,14 +4,18 @@
 #include <string>
 using namespace std;
 
-Chest::Chest(int xplace, int yplace){
-	x = xplace;		//set x and y coordinates for Chest
-	y = yplace;		//used to identify chests in chestArray in display
-	open = 0;
+//CONSTRUCTOR
 
+Chest::Chest(int xplace, int yplace){
+	x = (xplace);
+	y = yplace;
+	open = 0;
 	
 }
-		
+	
+// PUBLIC METHODS
+
+// GETTERS AND SETTERS
 
 int Chest::getx(){
 	return x;
