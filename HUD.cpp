@@ -1,6 +1,7 @@
 #include "HUD.h"
-#include "Textbox.h"
 #include <sstream>
+
+// CONSTRUCTOR
 
 HUD::HUD(string pathName, int hpMax, int shotMax) 
 	:Entity(pathName),
@@ -11,37 +12,11 @@ HUD::HUD(string pathName, int hpMax, int shotMax)
 		currentHealth = 1;
 		maxCB = shotMax;
 		maxHP = hpMax;
-		setDoubloons(0);
-		setSinks(0);
-		textbox = new Textbox();
 }
 
-void HUD::load() {
-
-	// Set rectangle bounds for loading images from the spritesheet
-
-	statusBar.x = 0;
-	statusBar.y = 0;
-	statusBar.h = 64;
-	statusBar.w = 144;
-
-	tick.x = 0;
-	tick.y = 64;
-	tick.h = 8;
-	tick.w = 1;
-
-	scoring.x = 0;
-	scoring.y = 128;
-	scoring.h = 64;
-	scoring.w = 144;
-}
+// PUBLIC METHODS
 
 void HUD::render(int xRender, int yRender, SDL_Surface* screen) {
-
-	if(textbox->checkDisplay()){
-		textbox->display(screen, &HUD_writer);
-	}
-
 
 	// Set location offsets for rendering status bar to screen
 
@@ -53,17 +28,17 @@ void HUD::render(int xRender, int yRender, SDL_Surface* screen) {
 
 	// Add damage counters to health bar, empty counters to cannonball bar
 
-	int barLength = 70;
+	int barLength = 90;
 
 	// Get number of counters to be rendered
 
-	int damageCtrs = (maxHP - currentHealth) / (maxHP / barLength);
-	int emptyCtrs = (maxCB - currentShot) / (maxCB / barLength);
+	double damageCtrs = (((double)maxHP - (double)currentHealth) / ((double)maxHP / (double)barLength));
+	double emptyCtrs = (((double)maxCB - (double)currentShot) / ((double)maxCB / (double)barLength));
 
 	// Render all damage counters
 
 	for(int i = barLength; i > barLength - damageCtrs; i--) {
-		statusBarOffset.x = x + 67 + i;
+		statusBarOffset.x = x + 48 + i;
 		statusBarOffset.y = y + 27;
 
 		SDL_BlitSurface(sheet.getSurface(), &tick, screen, &statusBarOffset);
@@ -72,7 +47,7 @@ void HUD::render(int xRender, int yRender, SDL_Surface* screen) {
 	// Render all empty counters
 
 	for(int i = barLength; i > barLength - emptyCtrs; i--) {
-		statusBarOffset.x = x + 67 + i;
+		statusBarOffset.x = x + 48 + i;
 		statusBarOffset.y = y + 48;
 
 		SDL_BlitSurface(sheet.getSurface(), &tick, screen, &statusBarOffset);
@@ -97,6 +72,8 @@ void HUD::update(Display* display) {
 
 }
 
+// GETTERS AND SETTERS
+
 void HUD::setCurrentShot(double newPercent) {
 	currentShot = newPercent;
 }
@@ -108,25 +85,13 @@ void HUD::setCurrentHealth(double newPercent) {
 void HUD::setDoubloons(double dubs) {
 
 	// converts incoming doubloon values to a string so it can be written to the HUD with TextWriter
-	numdubs = dubs;
-	if (dubs != 0){
-		char* message = "        YOU FOUND A DOUBLOON!!!";
-		textbox->changeText(message);
-		textbox->turnOn();
-	}
-	
+
 	ostringstream converter;
 	converter << "Doubloons: ";
 	converter << dubs;
 	doubloons = converter.str();
 
 }
-
-void HUD::IncreaseDoubloons(){
-	numdubs++;
-	setDoubloons(numdubs);
-}
-
 
 void HUD::setSinks(double newSinks) {
 
@@ -137,4 +102,26 @@ void HUD::setSinks(double newSinks) {
 	converter << newSinks;
 	sinks = converter.str();
 	
+}
+
+// PRIVATE METHODS
+
+void HUD::load() {
+
+	// Set rectangle bounds for loading images from the spritesheet
+
+	statusBar.x = 0;
+	statusBar.y = 0;
+	statusBar.h = 64;
+	statusBar.w = 144;
+
+	tick.x = 0;
+	tick.y = 64;
+	tick.h = 8;
+	tick.w = 1;
+
+	scoring.x = 0;
+	scoring.y = 128;
+	scoring.h = 64;
+	scoring.w = 144;
 }
