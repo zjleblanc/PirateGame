@@ -301,14 +301,14 @@ void Engine::loadObjects() {
 }
 
 void Engine::loadNPCs() {
-	NPCs.push_back(new NPC("Player3R.png", 10, WIDTH / 16, HEIGHT / 16));
-	NPCs.push_back(new NPC("Player3R.png", 10, 41, 36));
-	NPCs.push_back(new NPC("Player3R.png", 10, 26, 50));
-	NPCs.push_back(new NPC("Player3R.png", 10, 50, 57));
-	NPCs.push_back(new NPC("Player3R.png", 10, 234, 113));
-	NPCs.push_back(new NPC("Player3R.png", 10, 253, 109));
-	NPCs.push_back(new NPC("Player3R.png", 10, 253, 90));
-	NPCs.push_back(new NPC("Player3R.png", 10, 225, 97));
+	NPCs.push_back(new NPC("Player3.png", 10, WIDTH / 16, HEIGHT / 16));
+	NPCs.push_back(new NPC("Player3.png", 10, 41, 36));
+	NPCs.push_back(new NPC("Player3.png", 10, 26, 50));
+	NPCs.push_back(new NPC("Player3.png", 10, 50, 57));
+	NPCs.push_back(new NPC("Player3.png", 10, 234, 113));
+	NPCs.push_back(new NPC("Player3.png", 10, 253, 109));
+	NPCs.push_back(new NPC("Player3.png", 10, 253, 90));
+	NPCs.push_back(new NPC("Player3.png", 10, 225, 97));
 }
 
 void Engine::loadEnemies() {																	
